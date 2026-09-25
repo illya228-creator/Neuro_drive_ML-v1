@@ -1,8 +1,10 @@
 from pathlib import Path
+from turtle import done
 
 import pygame
 import torch
 
+from game import collision
 from game.car import Car
 from game.track import Track
 from game.collision import CollisionDetector
@@ -20,7 +22,7 @@ class MainWindow:
     FPS = 60
     PANEL_WIDTH = 250
 
-    START_X = 450
+    START_X = 500
     START_Y = 465
 
     MAX_LAPS = 2
@@ -53,7 +55,7 @@ class MainWindow:
         )
 
         # Трасса
-        map_path = Path("maps") / "track_01.png"
+        map_path = Path("maps") / "track_02.png"
 
         self.track = Track(
             map_path
@@ -274,13 +276,13 @@ class MainWindow:
 
         if collision:
 
-            reward = -10.0
-            done = True
+                # Большой штраф за столкновение
+                reward = -10.0
+                done = True
 
-            self.collisions += 1
+                self.collisions += 1
 
-            # Запоминаем столкновение
-            self.agent.remember(
+                self.agent.remember(
                 state,
                 action,
                 reward,
@@ -288,28 +290,49 @@ class MainWindow:
                 done
             )
 
-            self.agent.train_step()
+                self.agent.train_step()
 
-            # Возвращаем машину
-            self.reset_car()
-
-            # При столкновении попытка круга начинается заново
-            self.lap_counter.reset()
+            # Возвращаем машину на старт
+                self.reset_car()
 
         else:
 
-            reward = 0.1
             done = False
 
-            self.agent.remember(
-                state,
-                action,
-                reward,
-                next_state,
-                done
+            # Базовая награда за движение
+            reward = 0.05
+
+            # Расстояние до ближайшей стены
+            min_distance = min(
+                self.sensors.distances
             )
 
-            self.agent.train_step()
+    #    Безопасное положение
+            if min_distance > 70:
+                reward += 0.10
+
+    # Слишком близко к стене
+            elif min_distance < 30:
+                reward -= 0.15
+
+    # Прохождение круга
+            if lap_completed:
+
+                if self.lap_counter.laps == 1:
+                    reward += 20.0
+
+                elif self.lap_counter.laps == 2:
+                    reward += 50.0
+
+        self.agent.remember(
+            state,
+            action,
+            reward,
+            next_state,
+            done
+        )
+
+        self.agent.train_step()
 
         self.last_reward = reward
 
