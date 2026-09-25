@@ -5,6 +5,7 @@ import pygame
 from game.car import Car
 from game.track import Track
 from game.collision import CollisionDetector
+from game.sensors import SensorSystem
 
 class MainWindow:
     """Главное окно и игровой цикл MARS."""
@@ -31,6 +32,7 @@ class MainWindow:
         self.collision = CollisionDetector(self.track)
         # Создание автомобиля
         self.car = Car(450, 465)
+        self.sensors = SensorSystem(self.track)
 
     def run(self):
         """Главный игровой цикл."""
@@ -53,7 +55,7 @@ class MainWindow:
 
     def update(self):
         """Обновление состояния игры."""
-
+        
         keys = pygame.key.get_pressed()
 
         turn = 0
@@ -82,12 +84,22 @@ class MainWindow:
             self.car.y = old_y
             self.car.speed = 0
 
+        self.sensors.update(self.car)
+
+        
+
     def draw(self):
         """Отрисовка игры."""
 
         self.screen.fill((20, 20, 20))
 
         self.track.draw(self.screen)
+
+        self.sensors.draw(
+            self.screen,
+            self.car
+        )
+
         self.car.draw(self.screen)
 
         pygame.display.flip()
