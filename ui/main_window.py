@@ -22,8 +22,8 @@ class MainWindow:
     FPS = 60
     PANEL_WIDTH = 250
 
-    START_X = 500
-    START_Y = 465
+    START_X = 180
+    START_Y = 487
 
     MAX_LAPS = 2
 

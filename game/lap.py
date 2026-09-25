@@ -1,11 +1,11 @@
 class LapCounter:
     """Отслеживает прохождение стартовой линии."""
 
-    START_X_MIN = 420
-    START_X_MAX = 480
+    START_X_MIN = 155
+    START_X_MAX = 170
 
-    START_Y_MIN = 430
-    START_Y_MAX = 500
+    START_Y_MIN = 466
+    START_Y_MAX = 504
 
     def __init__(self):
         self.laps = 0

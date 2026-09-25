@@ -13,7 +13,7 @@ class Car:
         self.angle = 0.0
         self.speed = 0.0
 
-        self.max_speed = 4.0
+        self.max_speed = 2.7
         self.acceleration = 0.1
         self.friction = 0.05
         self.rotation_speed = 3.0

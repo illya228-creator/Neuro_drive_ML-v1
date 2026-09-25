@@ -22,3 +22,6 @@ data/training/*
 # Trained models
 models/*.pth
 models/*.pt
+data/
+tests/
+docs/
