@@ -20,7 +20,25 @@ class Track:
 
         self.rect = self.image.get_rect()
 
+    def is_wall(self, x: float, y: float) -> bool:
+        """Проверяет, является ли точка стеной."""
+
+        x = int(x)
+        y = int(y)
+
+        if not self.rect.collidepoint(x, y):
+            return True
+
+        pixel = self.image.get_at((x, y))
+
+        # Чёрный цвет — стена.
+        return (
+            pixel.r < 50
+            and pixel.g < 50
+            and pixel.b < 50
+        )
+
     def draw(self, screen: pygame.Surface):
-        """Отображает карту на экране."""
+        """Отображает карту."""
 
         screen.blit(self.image, self.rect)

@@ -4,7 +4,7 @@ import pygame
 
 from game.car import Car
 from game.track import Track
-
+from game.collision import CollisionDetector
 
 class MainWindow:
     """Главное окно и игровой цикл MARS."""
@@ -28,7 +28,7 @@ class MainWindow:
         # Загрузка трассы
         map_path = Path("maps") / "track_01.png"
         self.track = Track(map_path)
-
+        self.collision = CollisionDetector(self.track)
         # Создание автомобиля
         self.car = Car(450, 465)
 
@@ -69,10 +69,18 @@ class MainWindow:
             or keys[pygame.K_UP]
         )
 
+        old_x = self.car.x
+        old_y = self.car.y
+
         self.car.update(
             turn=turn,
             accelerate=accelerate
         )
+
+        if self.collision.is_collision(self.car):
+            self.car.x = old_x
+            self.car.y = old_y
+            self.car.speed = 0
 
     def draw(self):
         """Отрисовка игры."""
