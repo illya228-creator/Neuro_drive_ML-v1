@@ -9,7 +9,7 @@ from ml.replay_buffer import ReplayBuffer
 
 
 class AIAgent:
-    """AI-агент с обучением DQN."""
+    """AI-агент с обучением DQN и сохранением памяти."""
 
     def __init__(self):
         self.model = DrivingModel()
@@ -24,20 +24,21 @@ class AIAgent:
             lr=0.001
         )
 
-        self.memory = ReplayBuffer()
+        self.memory = ReplayBuffer(
+            capacity=10000
+        )
 
         self.gamma = 0.95
 
-        # Вероятность случайного действия.
         self.epsilon = 1.0
-
-        # Минимальная вероятность случайного действия.
         self.epsilon_min = 0.05
-
-        # Скорость уменьшения epsilon.
         self.epsilon_decay = 0.995
 
         self.batch_size = 64
+
+        self.steps = 0
+
+        self.load_checkpoint()
 
     def get_state(self, distances, speed):
         """Создаёт состояние автомобиля."""
@@ -90,7 +91,7 @@ class AIAgent:
         )
 
     def train_step(self):
-        """Обучает модель на одном batch."""
+        """Обучает модель."""
 
         if len(self.memory) < self.batch_size:
             return
@@ -153,16 +154,128 @@ class AIAgent:
         self.optimizer.step()
 
     def update_target(self):
-        """Синхронизирует target-модель."""
+        """Обновляет target-модель."""
 
         self.target_model.load_state_dict(
             self.model.state_dict()
         )
 
     def decay_epsilon(self):
-        """Уменьшает количество случайных действий."""
+        """Уменьшает случайность действий."""
 
         self.epsilon = max(
             self.epsilon_min,
             self.epsilon * self.epsilon_decay
         )
+
+    def save_checkpoint(self):
+        """Безопасно сохраняет состояние обучения."""
+
+        checkpoint = {
+            "model": self.model.state_dict(),
+            "target_model": self.target_model.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "epsilon": self.epsilon,
+            "steps": self.steps,
+            "memory": list(self.memory.buffer),
+        }
+
+        temp_path = "models/mars_checkpoint.tmp"
+        final_path = "models/mars_checkpoint.pth"
+
+        torch.save(
+            checkpoint,
+            temp_path
+        )
+
+        # Только после успешной записи
+        # заменяем старый checkpoint новым.
+        import os
+
+        os.replace(
+            temp_path,
+            final_path
+        )
+
+        print(
+            f"Checkpoint saved: {final_path}"
+        )
+
+    def load_checkpoint(self):
+        """Загружает предыдущее состояние обучения."""
+
+        checkpoint_path = "models/mars_checkpoint.pth"
+        model_path = "models/mars_model.pth"
+
+        # Сначала пытаемся загрузить полный checkpoint
+        try:
+            checkpoint = torch.load(
+                checkpoint_path,
+                map_location="cpu",
+                weights_only=False
+            )
+
+            self.model.load_state_dict(
+                checkpoint["model"]
+            )
+
+            self.target_model.load_state_dict(
+                checkpoint["target_model"]
+            )   
+
+            self.optimizer.load_state_dict(
+                checkpoint["optimizer"]
+            )
+
+            self.epsilon = checkpoint["epsilon"]
+            self.steps = checkpoint["steps"]
+
+            self.memory.buffer.extend(
+                checkpoint["memory"]
+            )
+
+            print("AI checkpoint loaded")
+            print(f"Steps: {self.steps}")
+            print(f"Epsilon: {self.epsilon:.3f}")
+            print(f"Memory: {len(self.memory)}")
+
+            return
+
+        except FileNotFoundError:
+            pass
+
+        # Если полного checkpoint нет,
+        # загружаем хотя бы обученную модель
+        try:
+            state_dict = torch.load(
+                model_path,
+                map_location="cpu",
+                weights_only=True
+            )
+
+            self.model.load_state_dict(
+                state_dict
+            )
+
+            self.target_model.load_state_dict(
+                state_dict
+            )
+
+            # Модель уже обучена,
+            # поэтому не начинаем с полностью
+            # случайного поведения.
+            self.epsilon = 0.10
+
+            print("Trained model loaded")
+            print(
+                "Checkpoint memory is unavailable."
+            )
+            print(
+                f"Epsilon: {self.epsilon:.3f}"
+            )
+
+        except FileNotFoundError:
+            print(
+                "No trained model found. "
+                "Starting new training."
+            )
