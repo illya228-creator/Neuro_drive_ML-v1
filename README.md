@@ -1,5 +1,4 @@
-MARS
-2D ML Racing Game
+MARS ML Racing Game
 
 Features:
 - PNG track
